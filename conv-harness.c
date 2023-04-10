@@ -33,7 +33,7 @@
 
    Version 1.1 : Fixed bug in code to create 4d matrix
 */
-#include <immintrin.h>
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <sys/time.h>
@@ -42,7 +42,6 @@
 #include <math.h>
 #include <stdint.h>
 #include <x86intrin.h>
-
 
 /* the following two definitions of DEBUGGING control whether or not
    debugging information is written out. To put the program into
@@ -316,7 +315,7 @@ void check_result(float ***result, float ***control,
     }
 }
 
-/* the slow but correct version of matmul written by David*/
+/* the slow but correct version of matmul written by David */
 void multichannel_conv(float ***image, int16_t ****kernels,
                        float ***output, int width, int height,
                        int nchannels, int nkernels, int kernel_order)
@@ -344,30 +343,30 @@ void multichannel_conv(float ***image, int16_t ****kernels,
             }
         }
     }
-} 
+}
+
 /* TODO the fast version of matmul written by the student */
-
-
 void student_conv(float ***image, int16_t ****kernels, float ***output,
                   int width, int height, int nchannels, int nkernels,
                   int kernel_order)
 {
-    // Declare loop variables
+    /* Declare loop variables */
     int h, w, x, y, c, m;
-   
-    // Set pointers for access to kernels, output & image
+
+    /* Set pointers for access to kernels, output & image */
     int16_t *kernel_pointer = ***kernels;
     float *output_pointer = **output;
     float *image_pointer = **image;
-   
-    // Calculate constants
+
+    /* Calculate constants */
     int kernel_order_squared = kernel_order * kernel_order;
     int m_index, c_index, x_index, mo_index, w_index, h_index;
     int m_mult = kernel_order_squared * nchannels;
     int mo_mult = width * height;
-    
-    // Parallelize the outer loop using OpenMP
-    #pragma omp parallel for
+    __m128 sum4;
+
+/* Parallelize the outer loop using OpenMP */
+#pragma omp parallel for
     for (m = 0; m < nkernels; m++)
     {
         mo_index = m * mo_mult;
@@ -382,10 +381,8 @@ void student_conv(float ***image, int16_t ****kernels, float ***output,
                 for (c = 0; c < nchannels; c++)
                 {
                     int c_index = c * kernel_order_squared + m_index;
-                    // Different kernel orders (1, 3, 5 & 7) are handled separately
                     if (kernel_order == 1)
                     {
-                        #pragma omp parallel for private(x, sum)
                         for (x = 0; x < kernel_order; x++)
                         {
                             x_index = x * kernel_order + c_index;
@@ -397,7 +394,7 @@ void student_conv(float ***image, int16_t ****kernels, float ***output,
                         for (x = 0; x < kernel_order; x++)
                         {
                             x_index = x * kernel_order + c_index;
-                            // Apply the kernel to the image by summing the products of corresponding elements
+                            /* Apply the kernel to the image by summing the products of corresponding elements */
                             sum += image[w + x][h][c] * kernel_pointer[x_index];
                             sum += image[w + x][h + 1][c] * kernel_pointer[1 + x_index];
                             sum += image[w + x][h + 2][c] * kernel_pointer[2 + x_index];
@@ -421,7 +418,7 @@ void student_conv(float ***image, int16_t ****kernels, float ***output,
                         for (x = 0; x < kernel_order; x++)
                         {
                             x_index = x * kernel_order + c_index;
-                            // Apply the kernel to the image by summing the products of corresponding elements
+                            /* Apply the kernel to the image by summing the products of corresponding elements */
                             sum += image[w + x][h][c] * kernel_pointer[x_index];
                             sum += image[w + x][h + 1][c] * kernel_pointer[1 + x_index];
                             sum += image[w + x][h + 2][c] * kernel_pointer[2 + x_index];
